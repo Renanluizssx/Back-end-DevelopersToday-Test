@@ -23,25 +23,20 @@ app.get('/countries', async (req, res) => {
 app.get('/country/:code', async (req, res) => {
   const { code } = req.params;
   try {
-    const [countryInfo, populationData] = await Promise.all([
-      axios.get(`https://date.nager.at/api/v3/CountryInfo/${code}`),
-      axios.get(`https://countriesnow.space/api/v0.1/countries/population`)
-    ]);
-
-    const countryData = countryInfo.data || {};
-    const countryFlag = countryData.flagUrl || "URL_EXAMPLE_NO_FLAG";
-    
-    const population = populationData.data.data
-      .find(c => c.country === countryData.commonName)?.populationCounts || [];
+    const response = await axios.get(`https://restcountries.com/v3.1/alpha/${code}`);
+    const countryData = response.data[0];
 
     res.json({
-      commonName: countryData.commonName || 'Common name not available',
-      officialName: countryData.officialName || 'Official name not available',
-      countryCode: countryData.countryCode || 'Code not available',
+      commonName: countryData.name?.common || 'Common name not available',
+      officialName: countryData.name?.official || 'Official name not available',
+      countryCode: countryData.cca2 || 'Code not available',
       region: countryData.region || 'Region not available',
       borders: countryData.borders || [],
-      population,
-      flag: countryFlag
+      population: countryData.population ? [{
+        year: new Date().getFullYear(), 
+        value: countryData.population
+      }] : 'Population data not available',
+      flag: countryData.flags?.svg || 'URL_EXAMPLE_NO_FLAG'
     });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching country information' });
@@ -51,3 +46,4 @@ app.get('/country/:code', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
